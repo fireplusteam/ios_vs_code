@@ -26,6 +26,7 @@ import { AutocompleteWatcher } from "./AutocompleteWatcher";
 import { ProjectManager } from "./ProjectManager/ProjectManager";
 import { TestProvider } from "./TestsProvider/TestProvider";
 import path from "path";
+import { modifiedContent } from "./HotRealoading/HotReloading";
 
 async function initialize() {
     if (!isActivated()) {
@@ -83,6 +84,10 @@ export function activate(context: vscode.ExtensionContext) {
     );
     logChannel.appendLine("Activated");
     logChannel.show();
+
+    context.subscriptions.push(vscode.workspace.onWillSaveTextDocument(async (e) => {
+        await modifiedContent(e.document.uri, e.document.getText());
+    }));
 
     context.subscriptions.push(projectManager.onProjectUpdate.event(e => {
         autocompleteWatcher.triggerIncrementalBuild();
