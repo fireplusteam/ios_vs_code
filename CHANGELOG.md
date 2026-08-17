@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.7.17 - 2026-03-28
+
+### Fixed
+
+- Place vscode workspace generated file in the root to avoid side effects with settings.json loading file
+
 ## 0.7.16 - 2026-03-28
 
 ### Fixed
