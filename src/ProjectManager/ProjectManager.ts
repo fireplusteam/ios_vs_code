@@ -363,7 +363,7 @@ export class ProjectManager
             folders: [
                 {
                     name: workspaceName,
-                    path: "../..",
+                    path: ".",
                 },
             ],
             settings: {
@@ -491,9 +491,7 @@ export class ProjectManager
     }
 
     private async xCodeWorkspacePath() {
-        return getFilePathInWorkspace(
-            path.join(this.cachePath(), `${await getWorkspaceId()}.code-workspace`)
-        );
+        return getFilePathInWorkspace(path.join(`${await getWorkspaceId()}.code-workspace`));
     }
 
     private async openXCodeWorkspace(file: string) {
