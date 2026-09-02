@@ -173,6 +173,16 @@
                     "description": "Number of parallel jobs for xcodebuild background indexing watcher which builds the project in background to provide up-to-date indexes for LSP client.",
                     "scope": "resource"
                 },
+                "vscode-ios.building.xcodebuild.args": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [],
+                    "title": "xcodebuild extra arguments",
+                    "description": "Extra xcodebuild arguments passing to each build action including testing",
+                    "scope": "resource"
+                },
                 "vscode-ios.building.system.mode": {
                     "type": "string",
                     "enum": [

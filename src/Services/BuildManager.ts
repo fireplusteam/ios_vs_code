@@ -39,6 +39,13 @@ function jobsCountForWatcher(): number {
     return Math.min(Math.max(jobs, 1), 16);
 }
 
+function buildingExtraArgs(): string[] {
+    const mode = vscode.workspace
+        .getConfiguration("vscode-ios", getWorkspaceFolder())
+        .get("building.xcodebuild.args", []);
+    return mode as string[];
+}
+
 export interface BuildTestsInput {
     projectFile: string;
     tests: string[];
@@ -93,7 +100,7 @@ export class BuildManager {
         if (deviceid.arch) {
             simulatorId += `,arch=${deviceid.arch}`;
         }
-        const extra = [];
+        const extra = await buildingExtraArgs();
         // all settings https://developer.apple.com/documentation/xcode/build-settings-reference
         if (isBuildIndexesWhileBuildingEnabled()) {
             extra.push("COMPILER_INDEX_STORE_ENABLE=YES"); // Control whether the compiler should emit index data while building.
