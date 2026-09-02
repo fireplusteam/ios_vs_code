@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.7.18 - 2026-03-28
+
+### Fixed
+
+- Improvements in sourcekit lsp integration
+
 ## 0.7.17 - 2026-03-28
 
 ### Fixed

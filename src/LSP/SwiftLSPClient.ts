@@ -16,6 +16,9 @@ import { kill } from "process";
 import { Mutex } from "async-mutex";
 import { LogChannelInterface } from "../Logs/LogChannel";
 import { getFilePathInWorkspace } from "../env";
+import { ActiveDocumentFeature } from "./features/ActiveDocumentFeature";
+import { PeekDocumentsFeature } from "./features/PeekDocumentsFeature";
+import { GetReferenceDocumentFeature } from "./features/GetReferenceDocumentFeature";
 
 function useLspForCFamilyFiles(folder: vscode.Uri) {
     const isEnabled = vscode.workspace.getConfiguration("vscode-ios", folder).get("lsp.c_family");
@@ -255,6 +258,18 @@ export class SwiftLSPClient implements vscode.Disposable {
                     }
                     return result;
                 },
+                provideReferences: async (document, position, options, token, next) => {
+                    const setting = "always";
+                    // if (setting === "default") {
+                    //     return next(document, position, options, token);
+                    // }
+                    return next(
+                        document,
+                        position,
+                        { ...options, includeDeclaration: setting === "always" },
+                        token
+                    );
+                },
                 provideInlayHints: async (document, position, token, next) => {
                     const result = await next(document, position, token);
                     return result;
@@ -295,13 +310,26 @@ export class SwiftLSPClient implements vscode.Disposable {
             initializationOptions: await this.initializationOptions(),
         };
 
+        const client = new langclient.LanguageClient(
+            "xcode.sourcekit-lsp",
+            "Xcode SourceKit Language Server",
+            serverOptions,
+            clientOptions
+        );
+        async function getSwiftVersion() {
+            try {
+                return await XCRunHelper.swiftToolchainVersion();
+            } catch {
+                return null;
+            }
+        }
+        const swiftVersion = (await getSwiftVersion()) || ["0", "0", "0"];
+        client.registerFeature(new ActiveDocumentFeature(client, swiftVersion));
+        client.registerFeature(new PeekDocumentsFeature(client, swiftVersion));
+        client.registerFeature(new GetReferenceDocumentFeature(client, swiftVersion));
+
         return {
-            client: new langclient.LanguageClient(
-                "xcode.sourcekit-lsp",
-                "Xcode SourceKit Language Server",
-                serverOptions,
-                clientOptions
-            ),
+            client: client,
             errorHandler,
         };
     }
@@ -335,16 +363,7 @@ export class SwiftLSPClient implements vscode.Disposable {
 
     /* eslint-disable @typescript-eslint/no-explicit-any */
     private async initializationOptions(): Promise<any> {
-        async function getSwiftVersion() {
-            try {
-                return await XCRunHelper.swiftToolchainVersion();
-            } catch {
-                return null;
-            }
-        }
-        const swiftVersion = await getSwiftVersion();
-
-        let options: any = {
+        const options: any = {
             "textDocument/codeLens": {
                 supportedCommands: {
                     "swift.run": "swift.run",
@@ -353,39 +372,6 @@ export class SwiftLSPClient implements vscode.Disposable {
                 },
             },
         };
-        // Swift 6.3 changed the value to enable experimental client capabilities from `true` to `{ "supported": true }`
-        // (https://github.com/swiftlang/sourcekit-lsp/pull/2204)
-        if (XCRunHelper.isVersionGreaterOrEqual(swiftVersion, [6, 3, 0])) {
-            options = {
-                ...options,
-                "workspace/peekDocuments": {
-                    supported: true, // workaround for client capability to handle `PeekDocumentsRequest`
-                    peekLocation: true, // allow SourceKit-LSP to send `Location` instead of `DocumentUri` for the locations to peek.
-                },
-                "workspace/getReferenceDocument": {
-                    supported: true, // the client can handle URIs with scheme `sourcekit-lsp:`
-                },
-            };
-        } else {
-            options = {
-                ...options,
-                "workspace/peekDocuments": true, // workaround for client capability to handle `PeekDocumentsRequest`
-                "workspace/getReferenceDocument": true, // the client can handle URIs with scheme `sourcekit-lsp:`
-            };
-        }
-        if (XCRunHelper.isVersionGreaterOrEqual(swiftVersion, [6, 3, 0])) {
-            options = {
-                ...options,
-                "window/didChangeActiveDocument": {
-                    supported: true, // the client can send `window/didChangeActiveDocument` notifications
-                },
-            };
-        } else if (XCRunHelper.isVersionGreaterOrEqual(swiftVersion, [6, 1, 0])) {
-            options = {
-                ...options,
-                "window/didChangeActiveDocument": true, // the client can send `window/didChangeActiveDocument` notifications
-            };
-        }
         // if (configuration.backgroundIndexing) {
         //     options = {
         //         ...options,

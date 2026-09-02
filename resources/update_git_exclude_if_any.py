@@ -4,3 +4,4 @@ import helper
 # update git exclude so that generated buildServer.json is not visible for git
 helper.update_git_exclude("buildServer.json")
 helper.update_git_exclude(".vscode/xcode")
+helper.update_git_exclude("*.xcodeproj.code-workspace")
